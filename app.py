@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from chat import get_response
 import pyodbc
@@ -17,9 +17,6 @@ def connection():
     conn = pyodbc.connect(cstr)
     return conn
 
-# @app.get("/")
-# def index_get():
-#     return render_template("base.html")
 
 @app.get('/')
 def index():
@@ -40,7 +37,8 @@ def insert_data():
         category = row['category']
         intent = row['intent']
         print(intent)
-        cursor.execute("INSERT INTO dbo.intents_data (flags, utterance, category, intent) VALUES (?, ?, ?, ?)", flags, utterance, category, intent)
+        cursor.execute("INSERT INTO dbo.intents_data (flags, utterance, category, intent) VALUES (?, ?, ?, ?)"
+                       , flags, utterance, category, intent)
     
     # the connection is not autocommitted by default, so we must commit to save our changes
     conn.commit()
