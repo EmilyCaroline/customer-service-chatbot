@@ -51,7 +51,7 @@ def get_response(msg):
 if __name__ == "__main__":
     print("Let's chat! (type 'quit' to exit)")
     while True:
-        # sentence = "do you use credit cards?"
+        # sentence = "How can I cancel my order?"
         sentence = input("You: ")
         if sentence == "quit":
             break

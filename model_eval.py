@@ -8,6 +8,9 @@ from torch.utils.data import Dataset, DataLoader
 
 from nltk_utils import bag_of_words, tokenize, stem
 from model import NeuralNet
+from sklearn.metrics import confusion_matrix, accuracy_score
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 with open('sample.json', 'r') as f:
     intents = json.load(f)
@@ -92,8 +95,17 @@ model = NeuralNet(input_size, hidden_size, output_size).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
+# Lists to store loss and accuracy values
+losses = []
+accuracies = []
+
+print('Start Training')
 # Train the model
 for epoch in range(num_epochs):
+    print(epoch)
+    running_loss = 0.0
+    correct_predictions = 0
+    total_samples = 0
     for (words, labels) in train_loader:
         words = words.to(device)
         labels = labels.to(dtype=torch.long).to(device)
@@ -108,12 +120,75 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        
+        running_loss += loss.item()
+        predicted_labels = torch.argmax(outputs, dim=1)
+        correct_predictions += (predicted_labels == labels).sum().item()
+        total_samples += labels.size(0)
+    
+    epoch_loss = running_loss / len(train_loader)
+    epoch_accuracy = correct_predictions / total_samples
+    
+    losses.append(epoch_loss)
+    accuracies.append(epoch_accuracy)
     
     if (epoch+1) % 100 == 0:
-        print (f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
-
+        # print (f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
+        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.4f}')
 
 print(f'final loss: {loss.item():.4f}')
+
+# Plot accuracy vs loss
+plt.figure(figsize=(10, 5))
+
+plt.subplot(1, 2, 1)
+plt.plot(range(1, num_epochs+1), losses, label='Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.title('Training Loss')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(range(1, num_epochs+1), accuracies, label='Accuracy', color='orange')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.title('Training Accuracy')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# confusion_matrix
+# Evaluate the model on training data
+model.eval()
+with torch.no_grad():
+    y_true = []
+    y_pred = []
+    for (words, labels) in train_loader:
+        words = words.to(device)
+        labels = labels.to(device)
+
+        outputs = model(words)
+        predicted_labels = torch.argmax(outputs, dim=1)
+
+        y_true.extend(labels.cpu().numpy())
+        y_pred.extend(predicted_labels.cpu().numpy())
+
+# Calculate and print accuracy
+accuracy = accuracy_score(y_true, y_pred)
+print(f'Training Accuracy: {accuracy:.4f}')
+
+# Create confusion matrix
+conf_matrix = confusion_matrix(y_true, y_pred, labels=range(output_size))
+
+# Plot confusion matrix
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=tags, yticklabels=tags)
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.title('Confusion Matrix')
+plt.show()
+
 
 data = {
 "model_state": model.state_dict(),
