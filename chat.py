@@ -57,5 +57,5 @@ if __name__ == "__main__":
             break
         print(sentence)
         resp = get_response(sentence)
-        print(resp)
+        print("Bim: ", resp)
 
